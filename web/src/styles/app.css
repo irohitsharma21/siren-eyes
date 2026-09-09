@@ -425,6 +425,13 @@ button, input, select { font-family: inherit; font-size: inherit; color: inherit
   border: 1px solid rgba(255,255,255,0.12);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  /*
+   * Fixed light text, not a theme token. These chips overlay the video frame,
+   * which is the same picture in either theme, so they sit on their own dark
+   * scrim and must not follow the page. Inheriting --text-primary made them
+   * dark-on-dark and completely invisible in light mode.
+   */
+  color: #f2f5f9;
 }
 
 /* ── Signal head ──────────────────────────────────────────────────── */

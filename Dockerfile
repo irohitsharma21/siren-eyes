@@ -89,6 +89,10 @@ RUN test "$(stat -c%s models/best.pt)"      -gt 1000000 \
 EXPOSE 7860
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7860/api/health')"
+    CMD python -c "import os,urllib.request; urllib.request.urlopen('http://127.0.0.1:%s/api/health' % os.environ.get('PORT','7860'))"
 
-CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]
+# Shell form so ${PORT} is expanded at runtime. Hugging Face Spaces expects the
+# port named in the README frontmatter, and PaaS hosts inject their own - Render
+# and Cloud Run both set $PORT and will not route to anything else. The default
+# keeps `docker run` and Spaces working unchanged.
+CMD python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-7860}

@@ -1,0 +1,40 @@
+# Render blueprint for Siren Eyes.
+#
+# Deploy: push this repository to GitHub, then in the Render dashboard choose
+# New > Blueprint and point it at the repo. Render reads this file and creates
+# the service; nothing here needs editing first.
+#
+# Measured footprint: 166 MB idle, 296 MB peak while analysing a 165-frame
+# 1080p clip at ~111 ms per frame. That fits the 512 MB free instance with
+# room to spare, which is why `plan: free` is honest here rather than hopeful.
+services:
+  - type: web
+    name: siren-eyes
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+
+    # Render probes this before routing traffic. The container loads YOLOv8 and
+    # the siren classifier during startup, so give it room: the first boot on a
+    # cold free instance is slower than a warm local run.
+    healthCheckPath: /api/health
+
+    envVars:
+      # Render injects PORT; the Dockerfile binds ${PORT:-7860}. Declared here
+      # so the value is visible in the dashboard rather than implicit.
+      - key: PORT
+        value: 7860
+      # Ultralytics probes DNS on import to check for updates. There is nothing
+      # to update - every weight is baked into the image - and on a cold start
+      # that probe is pure latency.
+      - key: YOLO_OFFLINE
+        value: 1
+      - key: PYTHONUNBUFFERED
+        value: 1
+
+    # Free instances sleep after 15 minutes idle and take roughly a minute to
+    # wake. Nothing here can change that; open the URL a few minutes before
+    # showing it to anyone.
+    autoDeploy: true
