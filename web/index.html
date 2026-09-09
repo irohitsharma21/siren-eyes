@@ -5,6 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Siren Eyes — Emergency Vehicle Preemption</title>
     <meta name="description" content="Stereo-aware multimodal ambulance detection with safety-buffered traffic signal preemption." />
+    <meta name="theme-color" content="#070809" />
+    <!--
+      Stamp the saved theme on <html> before the first paint. Without this the
+      document renders with the :root (light) palette for a frame, so a
+      dark-mode user gets a white flash on every load.
+
+      Inline on purpose — an external file would be a render-blocking round
+      trip. The storage key and the "dark" default must match src/App.tsx.
+    -->
+    <script>
+      (function () {
+        try {
+          var choice = localStorage.getItem('siren-eyes.theme');
+          if (choice !== 'light' && choice !== 'dark' && choice !== 'system') choice = 'dark';
+          // "system" leaves the attribute off so prefers-color-scheme decides.
+          if (choice !== 'system') document.documentElement.setAttribute('data-theme', choice);
+          var dark = choice === 'dark'
+            || (choice === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', dark ? '#070809' : '#eef1f5');
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

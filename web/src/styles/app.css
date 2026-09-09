@@ -13,37 +13,93 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
+/* ── Theme tokens ─────────────────────────────────────────────────────────
+   Three-state theming: light, dark, and system.
+
+     · Bare `:root` carries the LIGHT palette. Every colour token is defined
+       here, so no colour ever exists only inside a media query.
+     · `:root[data-theme="dark"]` overrides it when the user opts into dark.
+     · The `prefers-color-scheme` block below repeats the dark overrides for
+       anyone on "system", scoped so an explicit light choice always wins.
+
+   `data-theme` is stamped on <html> by an inline script in index.html before
+   first paint, so there is no flash of the wrong theme.
+   ─────────────────────────────────────────────────────────────────────── */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  --bg-base:     #070809;
-  --bg-surface:  #0c0e10;
-  --bg-panel:    #101315;
-  --bg-elevated: #161a1d;
-  --bg-hover:    #1c2125;
+  /* Surfaces — a cool paper canvas with white instrument panels on top. */
+  --bg-base:        #eef1f5;
+  --bg-surface:     #f6f8fa;
+  --bg-panel:       #ffffff;
+  --bg-elevated:    #e7ebf0;
+  --bg-hover:       #dce1e9;
+  --surface-sunken: #e5e9ef;
+  --surface-raised: #ffffff;
+  --topbar-bg:      rgba(246, 248, 250, 0.85);
 
-  --border:        rgba(255, 255, 255, 0.07);
-  --border-strong: rgba(255, 255, 255, 0.13);
+  /* Lines & tracks */
+  --border:                rgba(15, 23, 42, 0.11);
+  --border-strong:         rgba(15, 23, 42, 0.19);
+  --track-bg:              rgba(15, 23, 42, 0.10);
+  --scrollbar-thumb:       rgba(15, 23, 42, 0.17);
+  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.29);
 
-  --text:        #eef0f2;
-  --text-dim:    #949aa2;
-  --text-mute:   #5f666e;
+  /* Type */
+  --text:           #0d131c;
+  --text-dim:       #495364;
+  --text-mute:      #616a78;
+  --text-on-accent: #ffffff;
 
-  /* Signal semantics */
-  --accent:      #4c8dff;   /* informational / vision */
-  --accent-soft: rgba(76, 141, 255, 0.16);
-  --audio:       #38bdb4;   /* audio channel */
-  --audio-soft:  rgba(56, 189, 180, 0.16);
-  --fused:       #a78bfa;   /* fused decision */
-  --fused-soft:  rgba(167, 139, 250, 0.16);
+  /* Signal semantics — same hues, darkened until they carry white text and
+     read at AA against paper. */
+  --accent:      #1d63d1;   /* informational / vision */
+  --accent-soft: rgba(29, 99, 209, 0.10);
+  --accent-line: rgba(29, 99, 209, 0.28);
+  --accent-text: #174fa8;
+  --accent-hover: #1755b7;
+  --accent-solid: #1d63d1;   /* solid fill that must carry white text */
 
-  --go:          #34c759;
-  --go-soft:     rgba(52, 199, 89, 0.14);
-  --warn:        #f5a524;
-  --warn-soft:   rgba(245, 165, 36, 0.14);
-  --stop:        #ff453a;
-  --stop-soft:   rgba(255, 69, 58, 0.14);
+  --audio:       #0d8a81;   /* audio channel */
+  --audio-soft:  rgba(13, 138, 129, 0.12);
+  --fused:       #6d3fe0;   /* fused decision */
+  --fused-soft:  rgba(109, 63, 224, 0.11);
 
+  --go:        #12864a;
+  --go-soft:   rgba(18, 134, 74, 0.12);
+  --go-line:   rgba(18, 134, 74, 0.34);
+  --go-glow:   rgba(18, 134, 74, 0.40);
+
+  --warn:      #a15c02;
+  --warn-soft: rgba(161, 92, 2, 0.12);
+  --warn-line: rgba(161, 92, 2, 0.34);
+  --warn-text: #8a4f02;
+  --warn-glow: rgba(161, 92, 2, 0.40);
+
+  --stop:      #cf221a;
+  --stop-soft: rgba(207, 34, 26, 0.10);
+  --stop-line: rgba(207, 34, 26, 0.34);
+  --stop-glow: rgba(207, 34, 26, 0.40);
+
+  /* Hardware: the signal head is a dark casting and the video stage is a
+     letterbox, so both stay dark in either theme — that is what they are.
+     The lamps keep their vivid lit colours because they sit in that casting. */
+  --stage-bg:     #0b0d0f;
+  --scope-bg:     #0c0e10;
+  --lamp-housing: #1b1f24;
+  --lamp-off:     #3b4148;
+  --lamp-red:     #ff453a;
+  --lamp-amber:   #f5a524;
+  --lamp-green:   #34c759;
+  --dot-idle:     #c2c8d1;
+
+  --gradient-brand: linear-gradient(140deg, #e0342a, #a81f18);
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.07);
+  --shadow:    0 6px 18px rgba(15, 23, 42, 0.09), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 22px 50px rgba(15, 23, 42, 0.15);
+
+  /* Theme-independent */
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
 
@@ -52,11 +108,165 @@
   --r-lg: 12px;
   --r-xl: 16px;
 
-  --shadow: 0 4px 16px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.5);
-  --shadow-lg: 0 20px 48px rgba(0,0,0,0.55);
-
   --t-fast: 110ms cubic-bezier(0.25, 0.1, 0.25, 1);
-  --t: 180ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  --t:      180ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* ── Dark: explicit opt-in ────────────────────────────────────────────── */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg-base:        #070809;
+  --bg-surface:     #0c0e10;
+  --bg-panel:       #101315;
+  --bg-elevated:    #161a1d;
+  --bg-hover:       #1c2125;
+  --surface-sunken: #08090b;
+  --surface-raised: #21262b;
+  --topbar-bg:      rgba(7, 8, 9, 0.82);
+
+  /* Lines & tracks */
+  --border:                rgba(255, 255, 255, 0.07);
+  --border-strong:         rgba(255, 255, 255, 0.13);
+  --track-bg:              rgba(255, 255, 255, 0.07);
+  --scrollbar-thumb:       rgba(255, 255, 255, 0.10);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.20);
+
+  /* Type */
+  --text:           #eef0f2;
+  --text-dim:       #aab1ba;
+  --text-mute:      #878f9a;
+  --text-on-accent: #ffffff;
+
+  /* Signal semantics */
+  --accent:      #4c8dff;   /* informational / vision */
+  --accent-soft: rgba(76, 141, 255, 0.16);
+  --accent-line: rgba(76, 141, 255, 0.30);
+  --accent-text: #93bbff;
+  --accent-hover: #4181f5;
+  --accent-solid: #2f6fe0;   /* solid fill that must carry white text */
+
+  --audio:       #38bdb4;   /* audio channel */
+  --audio-soft:  rgba(56, 189, 180, 0.16);
+  --fused:       #a78bfa;   /* fused decision */
+  --fused-soft:  rgba(167, 139, 250, 0.16);
+
+  --go:        #34c759;
+  --go-soft:   rgba(52, 199, 89, 0.14);
+  --go-line:   rgba(52, 199, 89, 0.40);
+  --go-glow:   rgba(52, 199, 89, 0.55);
+
+  --warn:      #f5a524;
+  --warn-soft: rgba(245, 165, 36, 0.14);
+  --warn-line: rgba(245, 165, 36, 0.40);
+  --warn-text: #f3c169;
+  --warn-glow: rgba(245, 165, 36, 0.55);
+
+  --stop:      #ff453a;
+  --stop-soft: rgba(255, 69, 58, 0.14);
+  --stop-line: rgba(255, 69, 58, 0.40);
+  --stop-glow: rgba(255, 69, 58, 0.55);
+
+  /* Hardware: the signal head is a dark casting and the video stage is a
+     letterbox, so both stay dark in either theme — that is what they are. */
+  --stage-bg:     #000000;
+  --scope-bg:     #0c0e10;
+  --lamp-housing: #0a0b0c;
+  --lamp-off:     #23282c;
+  --lamp-red:     #ff453a;
+  --lamp-amber:   #f5a524;
+  --lamp-green:   #34c759;
+  --dot-idle:     #2a2f34;
+
+  --gradient-brand: linear-gradient(140deg, #ff453a, #c9302a);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow:    0 4px 16px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.55);
+}
+
+/* ── Dark: system preference (an explicit light choice still wins) ────── */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    /* Surfaces */
+    --bg-base:        #070809;
+    --bg-surface:     #0c0e10;
+    --bg-panel:       #101315;
+    --bg-elevated:    #161a1d;
+    --bg-hover:       #1c2125;
+    --surface-sunken: #08090b;
+    --surface-raised: #21262b;
+    --topbar-bg:      rgba(7, 8, 9, 0.82);
+
+    /* Lines & tracks */
+    --border:                rgba(255, 255, 255, 0.07);
+    --border-strong:         rgba(255, 255, 255, 0.13);
+    --track-bg:              rgba(255, 255, 255, 0.07);
+    --scrollbar-thumb:       rgba(255, 255, 255, 0.10);
+    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.20);
+
+    /* Type */
+    --text:           #eef0f2;
+    --text-dim:       #aab1ba;
+    --text-mute:      #878f9a;
+    --text-on-accent: #ffffff;
+
+    /* Signal semantics */
+    --accent:      #4c8dff;   /* informational / vision */
+    --accent-soft: rgba(76, 141, 255, 0.16);
+    --accent-line: rgba(76, 141, 255, 0.30);
+    --accent-text: #93bbff;
+    --accent-hover: #4181f5;
+    --accent-solid: #2f6fe0;   /* solid fill that must carry white text */
+
+    --audio:       #38bdb4;   /* audio channel */
+    --audio-soft:  rgba(56, 189, 180, 0.16);
+    --fused:       #a78bfa;   /* fused decision */
+    --fused-soft:  rgba(167, 139, 250, 0.16);
+
+    --go:        #34c759;
+    --go-soft:   rgba(52, 199, 89, 0.14);
+    --go-line:   rgba(52, 199, 89, 0.40);
+    --go-glow:   rgba(52, 199, 89, 0.55);
+
+    --warn:      #f5a524;
+    --warn-soft: rgba(245, 165, 36, 0.14);
+    --warn-line: rgba(245, 165, 36, 0.40);
+    --warn-text: #f3c169;
+    --warn-glow: rgba(245, 165, 36, 0.55);
+
+    --stop:      #ff453a;
+    --stop-soft: rgba(255, 69, 58, 0.14);
+    --stop-line: rgba(255, 69, 58, 0.40);
+    --stop-glow: rgba(255, 69, 58, 0.55);
+
+    /* Hardware: the signal head is a dark casting and the video stage is a
+       letterbox, so both stay dark in either theme — that is what they are. */
+    --stage-bg:     #000000;
+    --scope-bg:     #0c0e10;
+    --lamp-housing: #0a0b0c;
+    --lamp-off:     #23282c;
+    --lamp-red:     #ff453a;
+    --lamp-amber:   #f5a524;
+    --lamp-green:   #34c759;
+    --dot-idle:     #2a2f34;
+
+    --gradient-brand: linear-gradient(140deg, #ff453a, #c9302a);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow:    0 4px 16px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.55);
+  }
+}
+
+/* Colour changes are animated on the shell only — animating every element
+   makes theme switching feel soupy and fights hover transitions. */
+html.theme-transition,
+html.theme-transition body {
+  transition: background-color 220ms ease, color 220ms ease;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -82,15 +292,15 @@ button, input, select { font-family: inherit; font-size: inherit; color: inherit
 
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
 
-::selection { background: var(--accent); color: #fff; }
+::selection { background: var(--accent); color: var(--text-on-accent); }
 
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.1); border-radius: 99px;
+  background: var(--scrollbar-thumb); border-radius: 99px;
   border: 2px solid transparent; background-clip: content-box;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); background-clip: content-box; }
 
 .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 .num  { font-variant-numeric: tabular-nums; }
@@ -103,7 +313,7 @@ button, input, select { font-family: inherit; font-size: inherit; color: inherit
   height: 54px; flex-shrink: 0;
   display: flex; align-items: center; gap: 1rem;
   padding: 0 1.25rem;
-  background: rgba(7,8,9,0.82);
+  background: var(--topbar-bg);
   backdrop-filter: saturate(180%) blur(14px);
   -webkit-backdrop-filter: saturate(180%) blur(14px);
   border-bottom: 1px solid var(--border);
@@ -114,7 +324,7 @@ button, input, select { font-family: inherit; font-size: inherit; color: inherit
   display: grid; place-items: center;
   width: 26px; height: 26px;
   border-radius: 7px;
-  background: linear-gradient(140deg, var(--stop), #c9302a);
+  background: var(--gradient-brand);
   color: #fff;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.22);
 }
@@ -135,6 +345,7 @@ button, input, select { font-family: inherit; font-size: inherit; color: inherit
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 .panel + .panel { margin-top: 1rem; }
@@ -170,10 +381,10 @@ button, input, select { font-family: inherit; font-size: inherit; color: inherit
 .btn:disabled { opacity: 0.42; cursor: not-allowed; }
 
 .btn-primary {
-  background: var(--accent); border-color: transparent; color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.16);
+  background: var(--accent-solid); border-color: transparent; color: var(--text-on-accent);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.18);
 }
-.btn-primary:hover:not(:disabled) { background: #5f9bff; }
+.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
 
 .btn-ghost { background: transparent; border-color: transparent; color: var(--text-dim); }
 .btn-ghost:hover:not(:disabled) { background: var(--bg-elevated); color: var(--text); }
@@ -184,7 +395,7 @@ button, input, select { font-family: inherit; font-size: inherit; color: inherit
 .stage {
   position: relative;
   aspect-ratio: 16 / 9;
-  background: #000;
+  background: var(--stage-bg);
   border-radius: var(--r-lg);
   overflow: hidden;
   border: 1px solid var(--border);
@@ -225,17 +436,22 @@ button, input, select { font-family: inherit; font-size: inherit; color: inherit
   background: var(--bg-surface);
   transition: border-color var(--t), background var(--t);
 }
-.signal-head[data-state="preempt_green"] { border-color: rgba(52,199,89,0.4); background: var(--go-soft); }
-.signal-head[data-state="green"]         { border-color: rgba(52,199,89,0.3); background: var(--go-soft); }
-.signal-head[data-state="amber"]         { border-color: rgba(245,165,36,0.4); background: var(--warn-soft); }
+.signal-head[data-state="preempt_green"] { border-color: var(--go-line);   background: var(--go-soft); }
+.signal-head[data-state="green"]         { border-color: var(--go-line);   background: var(--go-soft); }
+.signal-head[data-state="amber"]         { border-color: var(--warn-line); background: var(--warn-soft); }
 .signal-head[data-state="all_red"],
 .signal-head[data-state="red"]           { border-color: var(--border); }
 
-.lamps { display: flex; flex-direction: column; gap: 5px; padding: 5px; background: #0a0b0c; border-radius: 99px; border: 1px solid var(--border); }
-.lamp { width: 13px; height: 13px; border-radius: 50%; background: #23282c; transition: background var(--t), box-shadow var(--t); }
-.lamp.on-red   { background: var(--stop); box-shadow: 0 0 10px rgba(255,69,58,0.65); }
-.lamp.on-amber { background: var(--warn); box-shadow: 0 0 10px rgba(245,165,36,0.65); }
-.lamp.on-green { background: var(--go);   box-shadow: 0 0 10px rgba(52,199,89,0.65); }
+.lamps {
+  display: flex; flex-direction: column; gap: 5px; padding: 5px;
+  background: var(--lamp-housing); border-radius: 99px;
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+.lamp { width: 13px; height: 13px; border-radius: 50%; background: var(--lamp-off); transition: background var(--t), box-shadow var(--t); }
+.lamp.on-red   { background: var(--lamp-red);   box-shadow: 0 0 10px rgba(255, 69, 58, 0.65); }
+.lamp.on-amber { background: var(--lamp-amber); box-shadow: 0 0 10px rgba(245, 165, 36, 0.65); }
+.lamp.on-green { background: var(--lamp-green); box-shadow: 0 0 10px rgba(52, 199, 89, 0.65); }
 
 .signal-label { font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.015em; }
 .signal-reason { font-size: 0.75rem; color: var(--text-dim); line-height: 1.45; }
@@ -249,7 +465,7 @@ button, input, select { font-family: inherit; font-size: inherit; color: inherit
 
 .meter-track {
   position: relative; height: 5px; border-radius: 99px;
-  background: rgba(255,255,255,0.06); overflow: hidden;
+  background: var(--track-bg); overflow: hidden;
 }
 .meter-fill { height: 100%; border-radius: 99px; transition: width var(--t-fast) linear, background var(--t); }
 .meter-fill[data-kind="vision"] { background: var(--accent); }
@@ -267,6 +483,18 @@ button, input, select { font-family: inherit; font-size: inherit; color: inherit
   padding: 0.5625rem 0.625rem;
   border-radius: var(--r-md);
   background: var(--bg-surface);
+  border: 1px solid var(--border);
+}
+
+/* A status chip that lives in the top bar rather than over video. */
+.status-chip {
+  display: inline-flex; align-items: center; gap: 0.375rem;
+  font-size: 0.6875rem; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 0.25rem 0.5rem;
+  border-radius: 99px;
+  color: var(--text-dim);
+  background: var(--bg-elevated);
   border: 1px solid var(--border);
 }
 .stat-label {
@@ -297,18 +525,27 @@ button, input, select { font-family: inherit; font-size: inherit; color: inherit
 .stage-row[data-active="true"] { background: var(--bg-elevated); }
 .stage-dot {
   width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-  background: #2a2f34; transition: background var(--t), box-shadow var(--t);
+  background: var(--dot-idle); transition: background var(--t), box-shadow var(--t);
 }
 .stage-row[data-status="pass"] .stage-dot { background: var(--go); box-shadow: 0 0 7px var(--go-soft); }
 .stage-row[data-status="block"] .stage-dot { background: var(--warn); box-shadow: 0 0 7px var(--warn-soft); }
-.stage-row[data-status="idle"] .stage-dot { background: #2a2f34; }
+.stage-row[data-status="idle"] .stage-dot { background: var(--dot-idle); }
 .stage-name { flex: 1; color: var(--text-dim); }
 .stage-row[data-status="pass"] .stage-name { color: var(--text); }
 .stage-val { font-family: var(--mono); font-size: 0.6875rem; color: var(--text-mute); font-variant-numeric: tabular-nums; }
 
 /* ── Timeline ─────────────────────────────────────────────────────── */
 .timeline { position: relative; height: 56px; width: 100%; }
-.timeline canvas { width: 100%; height: 100%; display: block; border-radius: var(--r-md); }
+/* The plot area stays dark in both themes so the three confidence traces
+   keep their contrast; the ring makes that read as a deliberate instrument
+   inset rather than a hole punched in a light panel. */
+.timeline canvas {
+  width: 100%; height: 100%; display: block;
+  border-radius: var(--r-md);
+  background: var(--scope-bg);
+  outline: 1px solid var(--border-strong);
+  outline-offset: -1px;
+}
 .timeline-legend {
   display: flex; flex-wrap: wrap; gap: 0.875rem;
   margin-top: 0.5rem; font-size: 0.6875rem; color: var(--text-mute);
@@ -353,7 +590,7 @@ button, input, select { font-family: inherit; font-size: inherit; color: inherit
 .dropzone:hover, .dropzone[data-drag="true"] { border-color: var(--accent); background: var(--accent-soft); }
 
 /* ── Progress ─────────────────────────────────────────────────────── */
-.progress { height: 3px; background: rgba(255,255,255,0.07); border-radius: 99px; overflow: hidden; }
+.progress { height: 3px; background: var(--track-bg); border-radius: 99px; overflow: hidden; }
 .progress-fill { height: 100%; background: var(--accent); transition: width 200ms linear; }
 
 /* ── Notice ───────────────────────────────────────────────────────── */
@@ -364,8 +601,8 @@ button, input, select { font-family: inherit; font-size: inherit; color: inherit
   font-size: 0.75rem; line-height: 1.5;
   border: 1px solid;
 }
-.notice-warn { background: var(--warn-soft); border-color: rgba(245,165,36,0.3); color: #f3c169; }
-.notice-info { background: var(--accent-soft); border-color: rgba(76,141,255,0.28); color: #93bbff; }
+.notice-warn { background: var(--warn-soft);   border-color: var(--warn-line);   color: var(--warn-text); }
+.notice-info { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); }
 .notice svg { flex-shrink: 0; margin-top: 1px; }
 
 /* ── Summary table ────────────────────────────────────────────────── */
@@ -412,4 +649,70 @@ button, input, select { font-family: inherit; font-size: inherit; color: inherit
   .topbar { padding: 0 0.875rem; }
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
   .brand-sub { display: none; }
+}
+
+/* ── Theme switch ─────────────────────────────────────────────────────────
+   A three-state segmented control (light · dark · system) living in the top
+   bar. The thumb is a pseudo-element that slides between slots, so switching
+   costs one transform and the icons never move.
+   ─────────────────────────────────────────────────────────────────────── */
+.theme-switch {
+  position: relative;
+  display: inline-flex; align-items: center;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.theme-switch::before {
+  content: '';
+  position: absolute; z-index: 0;
+  top: 2px; bottom: 2px; left: 2px;
+  width: 28px;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-sm);
+  transform: translateX(calc(var(--theme-index, 0) * 28px));
+  transition: transform 240ms cubic-bezier(0.32, 0.72, 0, 1),
+              background var(--t-fast);
+}
+.theme-switch-btn {
+  position: relative; z-index: 1;
+  display: grid; place-items: center;
+  width: 28px; height: 24px;
+  padding: 0; border: 0; border-radius: 999px;
+  background: transparent;
+  color: var(--text-mute);
+  cursor: pointer;
+  transition: color var(--t-fast);
+}
+.theme-switch-btn:hover { color: var(--text-dim); }
+.theme-switch-btn[aria-checked='true'] { color: var(--accent); }
+.theme-switch-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-switch::before { transition: none; }
+}
+
+/* Theme switching cross-fades rather than snapping. The blanket transition is
+   only live while <html> carries .theme-transition — the hook adds it for the
+   length of the switch and takes it straight back off, so it never interferes
+   with hover or focus transitions during normal use. */
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition: background-color 200ms ease, border-color 200ms ease,
+              color 200ms ease, fill 200ms ease, box-shadow 200ms ease !important;
+}
+
+/* A disabled primary must not be a faded accent: at 42% opacity over a light
+   canvas its white label drops under 3:1. Fall back to the neutral surface —
+   legible, and unmistakably inert, in both themes. */
+.btn-primary:disabled {
+  opacity: 1;
+  background: var(--bg-elevated);
+  border-color: var(--border);
+  color: var(--text-mute);
+  box-shadow: none;
 }
