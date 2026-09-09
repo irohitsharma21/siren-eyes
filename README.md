@@ -1,3 +1,14 @@
+---
+title: Siren Eyes
+emoji: 🚑
+colorFrom: red
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+short_description: Multimodal ambulance detection with signal preemption
+---
+
 # Siren Eyes
 
 **Stereo-aware multimodal ambulance detection with safety-buffered traffic

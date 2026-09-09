@@ -1,0 +1,63 @@
+# Build context, not image content. Everything the runtime needs is copied
+# explicitly by the Dockerfile, so anything here would either slow the build
+# down or overwrite something the build itself produced.
+
+# ── Virtualenvs ──────────────────────────────────────────────────────
+# Host-platform binaries, gigabytes of them, and never used inside the image.
+.venv/
+.venv-*/
+venv/
+
+# ── Node ─────────────────────────────────────────────────────────────
+# The web stage runs `npm ci` itself. Copying the host tree in would clobber
+# that install with modules built for the host platform, which is how a
+# local `docker build` breaks even though the same source builds fine.
+**/node_modules/
+
+# Stage 1 rebuilds the dashboard from source; a stale host build copied in
+# would silently ship a dashboard that no longer matches web/src.
+web/dist/
+web/.vite/
+*.tsbuildinfo
+
+# ── Python bytecode and tool caches ──────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── Training artefacts and runtime output ────────────────────────────
+# runs/esc50_cache.npz alone is 365 MB. It is a feature cache for
+# scripts/train_siren.py; nothing the API serves ever reads it.
+runs/
+data/
+datasets/
+uploads/
+*.log
+
+# ── Version control ──────────────────────────────────────────────────
+.git/
+.gitattributes
+.gitignore
+.github/
+
+# ── Not read at runtime ──────────────────────────────────────────────
+docs/
+scripts/
+README.md
+Dockerfile
+.dockerignore
+
+# ── Secrets, should one ever exist locally ───────────────────────────
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+service-account*.json
+
+# ── OS noise ─────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

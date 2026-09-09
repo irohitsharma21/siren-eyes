@@ -1,25 +1,56 @@
+# Runtime dependencies for the container.
+#
+# Every entry here is imported by something under app/. Upper bounds are not
+# caution for its own sake: a Space rebuilt six months after it was pushed
+# resolves this file again from scratch, and an unbounded `>=` is how an image
+# that worked at push time stops working at rebuild time.
+
 # ── Core inference stack ───────────────────────────────────────────────
-ultralytics>=8.2.0
-torch>=2.2.0
-torchvision>=0.17.0
-tensorflow-cpu>=2.16.0
-tf-keras>=2.16.0
+# torch and torchvision are installed from the CPU wheel index in the
+# Dockerfile *before* this file is read. The bounds below are therefore
+# already satisfied by that install, which is what stops pip from reaching
+# back to PyPI for the CUDA build.
+ultralytics>=8.2.0,<9
+torch>=2.2.0,<3
+torchvision>=0.17.0,<1
 
 # ── Signal / audio processing ──────────────────────────────────────────
-librosa>=0.10.1
-soundfile>=0.12.1
-scipy>=1.11.0
-numpy>=1.26.0
+librosa>=0.10.1,<2
+soundfile>=0.12.1,<1
+scipy>=1.11.0,<2
+numpy>=1.26.0,<3
+# app/core/audio.py reads the legacy Keras checkpoint straight out of its HDF5
+# container, so h5py is a direct import at module scope. It used to arrive as
+# a TensorFlow transitive; with TensorFlow gone it has to be declared, or the
+# image builds and then fails on the first import of app.core.audio.
+h5py>=3.10.0,<4
 
 # ── Video I/O ──────────────────────────────────────────────────────────
-opencv-python-headless>=4.9.0
-imageio-ffmpeg>=0.4.9
+opencv-python-headless>=4.9.0,<6
+# The 0.x wheels bundle a static ffmpeg binary per platform, which is why the
+# image installs no system ffmpeg package. Bounded below 1.0 in case that
+# packaging decision ever changes.
+imageio-ffmpeg>=0.4.9,<1
 
 # ── API layer ──────────────────────────────────────────────────────────
-fastapi>=0.111.0
-uvicorn[standard]>=0.29.0
-python-multipart>=0.0.9
-pydantic>=2.7.0
-pydantic-settings>=2.3.0
-websockets>=12.0
-jinja2>=3.1.3
+fastapi>=0.111.0,<1
+uvicorn[standard]>=0.29.0,<1
+python-multipart>=0.0.9,<1
+pydantic>=2.7.0,<3
+pydantic-settings>=2.3.0,<3
+websockets>=12.0,<18
+
+# ── Deliberately absent ────────────────────────────────────────────────
+# tensorflow-cpu and tf-keras were listed here but nothing under app/ imports
+# them. The only consumer is scripts/validate_port.py, which compares the
+# PyTorch transcription of the legacy classifier against the original Keras
+# graph and documents its own separate virtualenv for exactly that reason.
+# app/core/audio.py reads the .h5 weights with h5py and runs them in PyTorch,
+# so the runtime has no TensorFlow code path at all — shipping it added
+# several hundred megabytes to the image and a numpy/protobuf pin fight for
+# no runtime benefit.
+#
+# jinja2 was listed under the API layer but nothing imports it. FastAPI's
+# Swagger and OpenAPI routes build their HTML from plain strings, and the
+# SPA is served by StaticFiles and FileResponse, so there is no template
+# engine in the request path.
