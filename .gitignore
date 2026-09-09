@@ -1,0 +1,44 @@
+# ── Secrets — never commit these ─────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+service-account*.json
+
+# ── Python ───────────────────────────────────────────────────────────
+.venv/
+.venv-*/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── Node ─────────────────────────────────────────────────────────────
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# ── Runtime output ───────────────────────────────────────────────────
+runs/
+data/
+uploads/
+*.db
+*.db-wal
+*.db-shm
+.run/
+*.log
+
+# ── OS ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Siren Eyes specific ──────────────────────────────────────────────
+# Model weights ARE tracked (models/*.pt, models/*.h5) — they are the project.
+runs/esc50_cache.npz
+runs/uploads/

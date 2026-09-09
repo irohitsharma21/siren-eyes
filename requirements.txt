@@ -1,0 +1,25 @@
+# ── Core inference stack ───────────────────────────────────────────────
+ultralytics>=8.2.0
+torch>=2.2.0
+torchvision>=0.17.0
+tensorflow-cpu>=2.16.0
+tf-keras>=2.16.0
+
+# ── Signal / audio processing ──────────────────────────────────────────
+librosa>=0.10.1
+soundfile>=0.12.1
+scipy>=1.11.0
+numpy>=1.26.0
+
+# ── Video I/O ──────────────────────────────────────────────────────────
+opencv-python-headless>=4.9.0
+imageio-ffmpeg>=0.4.9
+
+# ── API layer ──────────────────────────────────────────────────────────
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+python-multipart>=0.0.9
+pydantic>=2.7.0
+pydantic-settings>=2.3.0
+websockets>=12.0
+jinja2>=3.1.3

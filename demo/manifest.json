@@ -1,0 +1,36 @@
+{
+  "demos": [
+    {
+      "name": "ambulance_departure.mp4",
+      "file": "ambulance_departure.mp4",
+      "title": "Street pass \u2014 forward",
+      "description": "Municipal ambulance manoeuvring on a narrow residential street. Vision and siren both fire strongly (0.99 / 0.98) and the clip exercises the whole decision path: the vehicle drifts toward the camera early on, preemption is granted once ETA clears the 5 s buffer, green is held until it clears, then amber and all-red return the signal to normal timing. Once it starts pulling away the gate reports blocked_not_approaching for the rest of the clip.",
+      "duration_s": 19.76,
+      "resolution": "1920x1080",
+      "fps": 25.0,
+      "size_mb": 17.7,
+      "has_audio": true,
+      "stereo": true,
+      "audio_note": "",
+      "source": "Supplied by the project author",
+      "license": "Author-supplied; not redistributed under an open licence",
+      "camera_hfov_deg": 25.0
+    },
+    {
+      "name": "ambulance_inbound.mp4",
+      "file": "ambulance_inbound.mp4",
+      "title": "Street pass \u2014 time-reversed",
+      "description": "The same take played backwards, stated plainly because it is a constructed fixture rather than new footage. Reversing inverts every closing speed, so the approach and recede phases swap places and the safety gate fires on a different part of the timeline \u2014 a cheap way to check the kinematics are driven by measured motion and not by anything baked into the clip.",
+      "duration_s": 19.76,
+      "resolution": "1920x1080",
+      "fps": 25.0,
+      "size_mb": 16.1,
+      "has_audio": true,
+      "stereo": true,
+      "audio_note": "",
+      "source": "Time-reversed from ambulance_departure.mp4",
+      "license": "Author-supplied; not redistributed under an open licence",
+      "camera_hfov_deg": 25.0
+    }
+  ]
+}
