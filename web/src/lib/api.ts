@@ -91,7 +91,7 @@ export interface HealthInfo {
       kind: 'retrained' | 'legacy'
       reliable: boolean
       threshold?: number
-      test_metrics?: Record<string, number>
+      test_metrics?: Record<string, number> & { roc_auc?: number; roc_auc_std?: number }
       note?: string
     }
   }

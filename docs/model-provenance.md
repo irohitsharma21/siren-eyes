@@ -77,7 +77,7 @@ a warning.
 | Data | [ESC-50](https://github.com/karolpiczak/ESC-50) — 2000 clips, 50 classes, CC BY-NC 3.0 |
 | Positives | the 40 `siren` clips |
 | Negatives | the other 49 classes, oversampled towards traffic-like confusers (`car_horn`, `engine`, `train`, `helicopter`, `airplane`, `clock_alarm`, `church_bells`, `chainsaw`) |
-| Split | ESC-50's own 5 folds — 1–3 train, 4 validation, 5 test |
+| Split | ESC-50's own folds, 5-fold cross-validation; per fold, 3 train / 1 validate / 1 test |
 | Input | 128 mel bands × 128 frames, `(power_to_db(ref=max) + 80) / 80` |
 
 Two choices are worth stating explicitly:
@@ -105,14 +105,58 @@ the mel. `librosa`'s phase-vocoder `time_stretch`/`pitch_shift` were tried and
 removed: at roughly 1 s per sample they made one epoch slower than the whole
 of the rest of training.
 
+### Results
+
+ESC-50's canonical protocol is 5-fold cross-validation, and it is used here in
+full: every fold takes a turn as the test set, so all 40 siren clips and all
+1960 non-siren clips are evaluated exactly once. A single held-out fold
+contains only 8 sirens — far too few to quote a precision from.
+
+| fold | ROC-AUC | F1 | precision | recall |
+|---|---|---|---|---|
+| 1 | 0.9703 | 0.462 | 0.600 | 0.375 |
+| 2 | 0.9882 | 0.533 | 0.364 | 1.000 |
+| 3 | 0.9911 | 0.636 | 0.500 | 0.875 |
+| 4 | 0.9939 | 0.700 | 0.583 | 0.875 |
+| 5 | 0.9847 | 0.500 | 0.375 | 0.750 |
+
+**ROC-AUC 0.9857 ± 0.0082** across folds.
+
+Pooled over every clip, at the operating threshold of 0.90:
+
+| | |
+|---|---|
+| accuracy | 0.972 |
+| precision | 0.400 |
+| recall | 0.800 |
+| ROC-AUC | 0.969 |
+| PR-AUC | 0.582 |
+| confusion | TN 1912 · FP 48 · FN 8 · TP 32 |
+
+Read this honestly. **AUC is strong and precision is not.** The classifier
+ranks siren audio above non-siren audio very reliably, but at a threshold that
+catches 80% of sirens it also flags 48 of 1960 negatives — a 2.4% false
+positive rate against a 2% base rate, so raw precision lands at 0.40.
+
+Two things matter about that:
+
+- **A false positive here cannot trigger preemption on its own.** Fusion is
+  `0.7·vision + 0.3·audio` against a 0.60 trigger, so audio at full confidence
+  contributes 0.30 and cannot clear the gate without visual confirmation. The
+  multi-modal design is precisely what absorbs this weakness — which is the
+  argument for building it that way rather than trusting one channel.
+- **The ceiling here is data, not architecture.** 40 positive source clips is
+  a thin basis, and the fold-to-fold precision swing (0.36 to 0.60) reflects
+  that more than it reflects the model.
+
 Reproduce with:
 
 ```bash
-python scripts/train_siren.py --epochs 30
+python scripts/train_siren.py --epochs 22 --folds 5
 ```
 
-Metrics on the held-out fold are written to `runs/siren_training.json` and
-surfaced live at `/api/health`.
+Per-fold metrics land in `runs/siren_training.json` and are surfaced live at
+`/api/health`.
 
 ### Honest limits
 

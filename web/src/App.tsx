@@ -351,8 +351,11 @@ export default function App() {
         Traffic Signal Preemption Using Edge AI</em> — Dalal, Gupta &amp; Sharma.
         {health?.models.siren_classifier.test_metrics?.roc_auc != null && (
           <> Siren classifier ROC-AUC{' '}
-            {health.models.siren_classifier.test_metrics.roc_auc.toFixed(3)} on
-            held-out ESC-50 fold 5.</>
+            {health.models.siren_classifier.test_metrics.roc_auc.toFixed(3)}
+            {health.models.siren_classifier.test_metrics.roc_auc_std != null && (
+              <> &plusmn; {health.models.siren_classifier.test_metrics.roc_auc_std.toFixed(3)}</>
+            )}
+            {' '}over ESC-50 5-fold cross-validation.</>
         )}
       </footer>
     </div>

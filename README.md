@@ -140,7 +140,7 @@ number from this project. Summary:
 | Model | Status |
 |---|---|
 | `models/best.pt` — YOLOv8 detector | Original artefact. Works; peak confidence 0.977 on held-back footage. |
-| `models/siren_cnn.pt` — siren classifier | **Retrained here.** The original checkpoint does not discriminate — it scores silence (0.444) above real ambulance audio (0.107). Metrics below are from ESC-50 5-fold cross-validation. |
+| `models/siren_cnn.pt` — siren classifier | **Retrained here.** The original scores silence (0.444) above real ambulance audio (0.107). Replacement: **ROC-AUC 0.9857 ± 0.0082** over ESC-50 5-fold cross-validation; pooled accuracy 0.972, recall 0.800, precision 0.400. |
 | Direction estimator | No learned weights; pure signal processing. |
 
 The original Keras checkpoint is retained for provenance and loaded only if the
@@ -157,6 +157,11 @@ one that is modest:
   `siren` clips. Augmentation multiplies windows, not underlying takes. The
   publication's corpus (UrbanSound8K + 800 custom Delhi recordings) would be a
   materially better basis.
+- **Its precision is 0.40, and that number should not be glossed over.** AUC is
+  0.986, so ranking is reliable, but at the 0.80-recall operating point it
+  flags 48 of 1960 negatives. This is survivable only because fusion means
+  audio alone cannot trigger preemption — `0.3 × 1.0 < 0.6`. On its own the
+  siren channel is not trustworthy enough to act on.
 - **Detector mAP is quoted, not reproduced.** The 6000-image training set is
   not in this repository.
 - **Direction accuracy is quoted, not reproduced.** The paper's 200 stereo
