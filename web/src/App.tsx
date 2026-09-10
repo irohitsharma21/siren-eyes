@@ -553,6 +553,18 @@ function SummaryPanel({ summary }: { summary: AnalysisSummary }) {
         <span className="panel-title"><Activity size={12} /> Analysis summary</span>
       </div>
       <div className="panel-body">
+        {summary.precomputed && (
+          <div style={{ marginBottom: 12 }}>
+            <Notice kind="info">
+              <strong>Recorded run</strong> — these are real figures from this
+              pipeline, computed once on an unthrottled machine and replayed
+              here. The hosted container is limited to about 0.15 of a CPU core,
+              which is not enough to run YOLOv8 over 1080p in reasonable time.
+              Uploaded clips are always analysed live.
+            </Notice>
+          </div>
+        )}
+
         {!summary.audio_available && (
           <div style={{ marginBottom: 12 }}>
             <Notice kind="warn">

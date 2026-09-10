@@ -51,6 +51,9 @@ export interface AnalysisSummary {
   p95_latency_ms: number
   stage_latency_ms: Record<string, number>
   blocked_reasons: Record<string, number>
+  /** True when this result was recorded by scripts/precompute_demos.py rather
+   *  than computed for this request. Only ever set for bundled demo clips. */
+  precomputed?: boolean
 }
 
 export interface DemoClip {

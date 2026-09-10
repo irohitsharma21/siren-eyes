@@ -12,7 +12,7 @@ import asyncio
 import json
 import shutil
 import uuid
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -193,6 +193,47 @@ async def get_analysis(job_id: str):
     return job.snapshot()
 
 
+def _precomputed_for(source: Path) -> Path | None:
+    """
+    The recorded analysis for a bundled demo, if one shipped with it.
+
+    Analysis is CPU-bound - roughly 111 ms per frame for YOLOv8 over 1080p on a
+    desktop core. A free-tier container gets about 0.15 of a core, which turns a
+    twenty-second clip into a ten-minute wait on an instance already close to
+    its memory ceiling, so in practice the stream never finishes.
+
+    The bundled clips are therefore analysed once by scripts/precompute_demos.py
+    on hardware that can do the work, and the result ships in the repository.
+    The figures are real output from this same pipeline, not fabrications, and
+    the summary carries `precomputed: true` so the dashboard can say so.
+    Uploads are always analysed live - there is nothing to record in advance.
+    """
+    if DEMO_DIR.resolve() not in source.resolve().parents:
+        return None
+    candidate = source.with_name(source.name + ".analysis.json")
+    return candidate if candidate.is_file() else None
+
+
+async def _replay_precomputed(websocket: WebSocket, job, path: Path) -> None:
+    """Stream a recorded analysis, paced roughly as the live run was."""
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    frames = payload["frames"]
+    summary = payload["summary"]
+
+    await websocket.send_json({"type": "started", "job_id": job.job_id})
+
+    for frame in frames:
+        # Pace with the latency actually measured for that frame, capped so a
+        # slow frame does not stall the dashboard. Sending all 165 at once
+        # would arrive as a single jump with no visible pipeline.
+        delay = min(float(frame.get("latency_ms", 40)), 120.0) / 1000.0
+        await asyncio.sleep(delay)
+        await websocket.send_json({"type": "frame", "frame": frame})
+
+    await websocket.send_json({"type": "summary", "summary": summary})
+    await websocket.send_json({"type": "done"})
+
+
 @app.websocket("/api/analyses/{job_id}/stream")
 async def stream_analysis(websocket: WebSocket, job_id: str):
     """
@@ -213,6 +254,17 @@ async def stream_analysis(websocket: WebSocket, job_id: str):
     if pipeline is None:
         await websocket.send_json({"type": "error", "message": "models still loading"})
         await websocket.close()
+        return
+
+    recorded = _precomputed_for(Path(job.source))
+    if recorded is not None:
+        try:
+            await _replay_precomputed(websocket, job, recorded)
+        except WebSocketDisconnect:
+            pass
+        finally:
+            with suppress(Exception):
+                await websocket.close()
         return
 
     loop = asyncio.get_running_loop()
