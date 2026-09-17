@@ -60,7 +60,13 @@ class FusionResult:
     triggered: bool
 
     @classmethod
-    def compute(cls, vision: float, audio: float) -> "FusionResult":
+    def compute(
+        cls, vision: float, audio: float, trigger_threshold: float | None = None
+    ) -> "FusionResult":
+        """Fuse the two channels; `trigger_threshold` defaults to the paper's 0.60."""
+        threshold = (
+            settings.FUSION_TRIGGER_THRESHOLD if trigger_threshold is None else trigger_threshold
+        )
         fused = (
             settings.FUSION_ALPHA_VISION * vision
             + settings.FUSION_BETA_AUDIO * audio
@@ -69,7 +75,7 @@ class FusionResult:
             vision_confidence=vision,
             audio_confidence=audio,
             fused_confidence=fused,
-            triggered=fused >= settings.FUSION_TRIGGER_THRESHOLD,
+            triggered=fused >= threshold,
         )
 
 
@@ -117,6 +123,10 @@ class PreemptionController:
     """
 
     approach_angle_deg: float = 0.0
+    # Per-run overrides of the paper's gate thresholds; see app/core/params.py.
+    trigger_threshold: float = settings.FUSION_TRIGGER_THRESHOLD
+    safety_buffer_s: float = settings.SAFETY_BUFFER_S
+    ttc_threshold_s: float = settings.TTC_THRESHOLD_S
     state: SignalState = SignalState.RED
     _granted_at: float | None = field(default=None, init=False)
     _revert_at: float | None = field(default=None, init=False)
@@ -183,7 +193,7 @@ class PreemptionController:
             return (
                 Decision.BLOCKED_CONFIDENCE,
                 f"fused confidence {fusion.fused_confidence:.2f} below "
-                f"{settings.FUSION_TRIGGER_THRESHOLD:.2f}",
+                f"{self.trigger_threshold:.2f}",
             )
 
         if kin is None or not kin.closing:
@@ -203,20 +213,20 @@ class PreemptionController:
                 )
 
         # TTC gate: paper section III-F.
-        if min_ttc < settings.TTC_THRESHOLD_S:
+        if min_ttc < self.ttc_threshold_s:
             return (
                 Decision.BLOCKED_TTC,
                 f"conflicting movement at TTC {min_ttc:.1f}s "
-                f"(< {settings.TTC_THRESHOLD_S:.0f}s)",
+                f"(< {self.ttc_threshold_s:.1f}s)",
             )
 
         # Safety buffer: never cut a phase shorter than the clearance time.
-        if kin.eta_s is None or kin.eta_s <= settings.SAFETY_BUFFER_S:
+        if kin.eta_s is None or kin.eta_s <= self.safety_buffer_s:
             eta_txt = "unknown" if kin.eta_s is None else f"{kin.eta_s:.1f}s"
             return (
                 Decision.BLOCKED_SAFETY_BUFFER,
                 f"ETA {eta_txt} does not clear the "
-                f"{settings.SAFETY_BUFFER_S:.0f}s safety buffer",
+                f"{self.safety_buffer_s:.1f}s safety buffer",
             )
 
         self.state = SignalState.PREEMPT_GREEN

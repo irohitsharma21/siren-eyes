@@ -263,9 +263,17 @@ place of the one stage 1 produces.
 ## Local Docker
 
 ```bash
-docker build -t siren-eyes .
+docker build -t siren-eyes \
+    --build-arg GIT_SHA=$(git rev-parse HEAD) \
+    --build-arg BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) .
 docker run --rm -p 7860:7860 siren-eyes
 ```
+
+The two build args are optional. They feed `GET /api/version`, which the
+dashboard shows in its footer and in the health chip's tooltip; without them
+the app falls back to `RENDER_GIT_COMMIT` (Render injects it at runtime), then
+to `git rev-parse` if a checkout is present, and reports `unknown` otherwise.
+Build time falls back to the modification time of `web/dist/index.html`.
 
 ---
 

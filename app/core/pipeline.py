@@ -30,6 +30,7 @@ from app.config import settings
 from app.core.audio import SirenClassifier
 from app.core.direction import DirectionEstimate, estimate_direction
 from app.core.geometry import BoxTracker, KinematicState
+from app.core.params import AnalysisParams
 from app.core.preemption import (
     ConflictVehicle,
     Decision,
@@ -105,6 +106,12 @@ class AnalysisSummary:
     p95_latency_ms: float
     stage_latency_ms: dict[str, float]
     blocked_reasons: dict[str, int]
+    # The thresholds this run was gated with (app/core/params.py). Recorded so
+    # an exported result is reproducible and the UI can flag non-default runs.
+    parameters: dict[str, float] = field(default_factory=lambda: AnalysisParams().as_dict())
+    # True when the client stopped the run early; the aggregates above then
+    # describe only the frames that were analysed before the stop.
+    cancelled: bool = False
 
 
 class SirenEyesPipeline:
@@ -166,21 +173,40 @@ class SirenEyesPipeline:
         approach_angle_deg: float = 0.0,
         hfov_deg: float | None = None,
         progress: Callable[[float], None] | None = None,
+        params: AnalysisParams | None = None,
+        on_phase: Callable[[str], None] | None = None,
+        should_stop: Callable[[], bool] | None = None,
     ) -> Iterator[FrameResult]:
         """
         Analyse a clip, yielding one FrameResult per sampled frame.
 
         Streaming rather than batching so the dashboard can render progress on
         long clips instead of waiting for the whole file.
+
+        `on_phase` is told which stage is running before the first frame
+        arrives - audio scoring alone can take several seconds on a slow CPU
+        and a silent wait reads as a hang. `should_stop` is polled between
+        frames; returning True ends the run cleanly with the frames so far.
         """
+        params = params or AnalysisParams()
         video_path = Path(video_path)
+
+        if on_phase:
+            on_phase("probing video")
         info = probe_video(video_path)
 
+        if on_phase:
+            on_phase("scoring audio")
         track = extract_audio(video_path)
         audio = self.analyse_audio(track)
 
         tracker = BoxTracker()
-        controller = PreemptionController(approach_angle_deg=approach_angle_deg)
+        controller = PreemptionController(
+            approach_angle_deg=approach_angle_deg,
+            trigger_threshold=params.fused_threshold,
+            safety_buffer_s=params.safety_buffer_s,
+            ttc_threshold_s=params.min_ttc_s,
+        )
 
         # Focal length in pixels for this clip. A per-clip horizontal field of
         # view (from the demo manifest) beats the global default, which assumes
@@ -204,17 +230,24 @@ class SirenEyesPipeline:
         self._detection_frames = 0
         self._peak_vision = 0.0
         self._first_detection: float | None = None
+        self._params = params
+        self._cancelled = False
+
+        if on_phase:
+            on_phase("analysing frames")
 
         for idx, ts, frame in iter_frames(video_path):
+            if should_stop and should_stop():
+                self._cancelled = True
+                break
+
             t0 = time.perf_counter()
 
             # ── stage 2: vision ───────────────────────────────────────
             detections = self.detector.detect(frame, conf=0.20)
             t_vision = time.perf_counter()
 
-            gated = [
-                d for d in detections if d.confidence >= settings.VISION_CONF_THRESHOLD
-            ]
+            gated = [d for d in detections if d.confidence >= params.vision_threshold]
             vision_conf = max((d.confidence for d in gated), default=0.0)
 
             # ── stages 3 + 4: audio, pre-computed ────────────────────
@@ -236,7 +269,9 @@ class SirenEyesPipeline:
             t_geom = time.perf_counter()
 
             # ── stages 6-8: fusion and decision ──────────────────────
-            fusion = FusionResult.compute(vision_conf, audio_conf)
+            fusion = FusionResult.compute(
+                vision_conf, audio_conf, trigger_threshold=params.fused_threshold
+            )
             event = controller.step(
                 ts, fusion, kin, direction, conflicts(ts) if conflicts else []
             )
@@ -336,6 +371,8 @@ class SirenEyesPipeline:
             p95_latency_ms=round(float(np.percentile(lat, 95)), 2),
             stage_latency_ms={k: round(v / n, 2) for k, v in self._stage_ms.items()},
             blocked_reasons=blocked,
+            parameters=self._params.as_dict(),
+            cancelled=self._cancelled,
         )
 
     def analyse(self, video_path: str | Path, **kw) -> dict:

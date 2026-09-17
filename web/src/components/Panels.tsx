@@ -1,20 +1,23 @@
 import {
   AlertTriangle, Compass as CompassIcon, Gauge, Info, Radio, ShieldCheck,
 } from 'lucide-react'
-import type { FrameResult, SystemConfig } from '../lib/api'
+import type { AnalysisParams, FrameResult, SystemConfig } from '../lib/api'
 
 /* ── Confidence meters ─────────────────────────────────────────────── */
 
-export function Meters({ frame, config }: { frame: FrameResult | null; config: SystemConfig | null }) {
+export function Meters({
+  frame, config, params,
+}: { frame: FrameResult | null; config: SystemConfig | null; params: AnalysisParams | null }) {
   const v = frame?.vision_confidence ?? 0
   const a = frame?.audio_confidence ?? 0
   const f = frame?.fused_confidence ?? 0
-  const trigger = config?.fusion.trigger_threshold ?? 0.6
+  const trigger = params?.fused_threshold ?? config?.fusion.trigger_threshold ?? 0.6
+  const visionGate = params?.vision_threshold ?? config?.vision_confidence_threshold ?? 0.65
 
   return (
     <div>
-      <Meter name="Vision (YOLOv8)" value={v} kind="vision" />
-      <Meter name="Audio (siren CNN)" value={a} kind="audio" />
+      <Meter name="Vision (YOLOv8)" value={v} kind="vision" threshold={visionGate} />
+      <Meter name="Audio (siren CNN)" value={a} kind="audio" threshold={config?.siren_threshold ?? 0.5} />
       <Meter
         name={`Fused  ${config ? `${config.fusion.alpha_vision}·V + ${config.fusion.beta_audio}·A` : ''}`}
         value={f}
@@ -49,7 +52,7 @@ function Meter({
           <div
             className="meter-threshold"
             style={{ left: `${threshold * 100}%` }}
-            title={`trigger threshold ${threshold}`}
+            title={`threshold ${threshold}`}
           />
         )}
       </div>
@@ -193,10 +196,12 @@ export function Compass({ frame }: { frame: FrameResult | null }) {
 
 type StageStatus = 'idle' | 'pass' | 'block'
 
-export function Pipeline({ frame, config }: { frame: FrameResult | null; config: SystemConfig | null }) {
-  const visionOk = (frame?.vision_confidence ?? 0) >= (config?.vision_confidence_threshold ?? 0.65)
+export function Pipeline({
+  frame, config, params,
+}: { frame: FrameResult | null; config: SystemConfig | null; params: AnalysisParams | null }) {
+  const visionOk = (frame?.vision_confidence ?? 0) >= (params?.vision_threshold ?? config?.vision_confidence_threshold ?? 0.65)
   const audioOk = (frame?.audio_confidence ?? 0) >= (config?.siren_threshold ?? 0.5)
-  const fusedOk = (frame?.fused_confidence ?? 0) >= (config?.fusion.trigger_threshold ?? 0.6)
+  const fusedOk = (frame?.fused_confidence ?? 0) >= (params?.fused_threshold ?? config?.fusion.trigger_threshold ?? 0.6)
   const decision = frame?.decision ?? 'idle'
 
   const stages: { name: string; status: StageStatus; value: string }[] = [

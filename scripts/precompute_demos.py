@@ -80,6 +80,9 @@ def main() -> int:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
     pipeline = SirenEyesPipeline()
+    # The API warms the detector at startup; do the same here so the first
+    # clip's early frames do not carry the model load in their latencies.
+    pipeline.detector.warmup()
     for clip in manifest["demos"]:
         source = DEMO_DIR / clip["file"]
         if not source.exists():

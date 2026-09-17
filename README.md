@@ -94,8 +94,9 @@ cd web && npm install && npm run build && cd ..
 python -m uvicorn app.main:app --port 7860
 ```
 
-Open <http://localhost:7860>, pick the bundled demo clip, press **Run
-analysis**.
+Open <http://localhost:7860>, pick a bundled demo clip from the app bar and
+press **Run** (or press `R`; `?` lists every shortcut). A shareable deep link
+starts a clip on load: `/?clip=ambulance_departure.mp4&autorun=1`.
 
 From the repository root, `./run.ps1 start siren` (or `./run.sh start siren`)
 does the same in the background.
@@ -106,20 +107,51 @@ No API keys. No network calls at inference. No GPU.
 
 ## What you will see
 
-The dashboard streams one record per analysed frame over a WebSocket:
+The dashboard is a single page: an app bar (clip selector, Run/Stop,
+parameters, server health, theme), a main stage with the video and its overlay,
+and an instrument column that scrolls on its own. On a tablet or phone the
+panels stack with the video on top. It streams one record per analysed frame
+over a WebSocket and renders:
 
-- **Detection overlay** — corner-bracket reticles on confirmed detections;
-  sub-threshold boxes stay visible but dimmed, so the 0.65 gate is legible
-  rather than looking like a missed detection.
-- **Confidence meters** — vision, audio and fused, with the trigger threshold
-  marked on the fused bar.
-- **Direction compass** — the fused ITD/ILD bearing, or an explicit statement
-  that direction is unavailable and why.
-- **Kinematics** — distance, closing speed, ETA, per-frame latency.
-- **Pipeline** — all seven stages, showing which passed, which blocked, and the
-  value that decided it.
-- **Summary** — including a count of *why preemption was withheld*, broken down
-  by gate.
+- **Detection overlay** — corner-bracket reticles on confirmed detections with
+  a fading motion trail of the tracked box, a distance / speed / ETA / bearing
+  readout beside it, and a bearing dial that follows the fused direction.
+  Sub-threshold boxes stay visible but dimmed, so the gate is legible rather
+  than looking like a missed detection. A **Compare** toggle shows the raw
+  detector output (everything above 0.20) against the gated view. HUD chips
+  carry frame index, timestamp, per-frame latency and signal state.
+- **Timeline** — three confidence lanes (vision, audio, fused) each with its
+  threshold drawn in, a signal-state band, decision markers, and a hover
+  tooltip with every value at that instant. Click or drag to seek; `←` `→`
+  step a frame (`Shift` for ten); `Space` plays. A decision-event list
+  ("first detection 0.60 s", "preemption granted 2.28 s", "blocked: not
+  approaching") jumps the playhead.
+- **Signal decision, confidence meters, kinematics, direction compass,
+  pipeline** — the instrument panels, all driven by the frame under the
+  playhead, all stating their own units and thresholds.
+- **Results** — verdict, peak confidences, detection-to-grant latency,
+  per-stage latency bars, a breakdown of *why preemption was withheld* by gate,
+  and buttons to export the run as JSON or per-frame CSV, or copy a plain-text
+  summary to the clipboard.
+- **Recent runs** — the last twelve runs in this browser, restored across
+  reloads; click one to bring its frames and results back.
+
+---
+
+## Features
+
+| | |
+|---|---|
+| **Stop a run** | `DELETE /api/analyses/{id}` asks the worker to stop between frames; the stream returns a partial summary and a `cancelled` event, and the dashboard keeps what it has. Closing the page does the same, so an abandoned upload does not burn the CPU. |
+| **Per-run parameters** | Vision threshold, fused trigger, safety buffer and minimum TTC can be changed for one run from the *Parameters* popover. The server validates the ranges (`app/core/params.py`) and records the values in the summary. A demo clip only replays its recording at the defaults; move any value and it is analysed live, and the UI says so beforehand. |
+| **Snapshot** | Renders the current video frame plus overlay at native resolution to a PNG, with a caption strip naming the clip, time, confidences and decision. |
+| **Export & share** | JSON (run metadata, summary, every frame), CSV (one row per frame), and a clipboard summary suitable for a message or an issue. |
+| **Run history** | Last twelve runs kept in memory and mirrored to `localStorage` under a 3 MB budget (frames are shed from the oldest first). Demo footage reloads from the server; an upload's video lives only as long as the page, and the UI says so. |
+| **Upload onboarding** | Drag-and-drop onto the stage or the Source panel, type and size validation with the server's real limits (`GET /api/config` → `upload`), and upload progress. |
+| **Live status** | Phase events (`probing video`, `scoring audio`, `analysing frames`) so the seconds before the first frame do not read as a hang; a wake-up notice while a sleeping free instance starts. |
+| **Build provenance** | `GET /api/version` reports commit, build time, host and uptime; shown in the footer and in the health chip's tooltip. |
+| **Keyboard** | `Space`, `←`/`→`, `Shift`+arrows, `Home`/`End`, `R` run, `Esc` stop, `S` snapshot, `C` compare, `P` parameters, `U` upload, `M` mute, `?` help. |
+| **Themes** | Light, dark, or follow the system; no flash of the wrong theme on load. |
 
 ---
 
@@ -205,13 +237,14 @@ one that is modest:
 app/
   config.py          every constant, annotated with its paper section
   main.py            FastAPI app, WebSocket streaming, static hosting
-  jobs.py            in-process analysis job registry
+  jobs.py            in-process analysis job registry, cooperative cancellation
   media.py           ffmpeg-backed video and stereo audio ingest
   core/
     vision.py        YOLOv8 wrapper
     audio.py         mel features + siren CNN (legacy port and retrained net)
     direction.py     GCC-PHAT ITD, in-band ILD, Gaussian-product fusion
     geometry.py      pinhole distance, IoU tracker, least-squares velocity
+    params.py        per-run threshold overrides and their bounds
     preemption.py    fusion + the safety state machine
     pipeline.py      orchestration
 scripts/
@@ -220,6 +253,10 @@ scripts/
   diagnose_siren.py  normalisation sweep used to condemn the original model
   build_demos.py     regenerate the demo manifest
 web/                 React dashboard
+  src/App.tsx        layout, run lifecycle, keyboard shortcuts
+  src/components/    VideoStage (overlay + snapshot), Timeline (lanes + events),
+                     Results, Parameters, History, Onboarding, Panels
+  src/lib/           api client, analysis helpers, export, history, theme
 ```
 
 ---
@@ -228,11 +265,14 @@ web/                 React dashboard
 
 | | |
 |---|---|
-| `GET /api/health` | model status and live metrics |
-| `GET /api/config` | all operating thresholds |
+| `GET /api/health` | model status, live metrics, build summary |
+| `GET /api/version` | commit, build time, host, uptime |
+| `GET /api/config` | all operating thresholds, per-run parameter bounds, upload limits |
 | `GET /api/demos` | bundled demo clips |
-| `POST /api/analyses` | queue an analysis (upload or `?demo=`) |
-| `WS /api/analyses/{id}/stream` | per-frame results |
+| `POST /api/analyses` | queue an analysis (upload or `?demo=`); optional `vision_threshold`, `fused_threshold`, `safety_buffer_s`, `min_ttc_s` |
+| `GET /api/analyses/{id}` | job snapshot |
+| `DELETE /api/analyses/{id}` | stop a running analysis |
+| `WS /api/analyses/{id}/stream` | `started` → `status`* → `frame`* → `summary` → `done` \| `cancelled` \| `error` |
 | `GET /api/docs` | OpenAPI / Swagger |
 
 ---

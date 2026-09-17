@@ -72,6 +72,14 @@ COPY --chown=user models/ ./models/
 COPY --chown=user demo/   ./demo/
 COPY --chown=user --from=web /web/dist ./web/dist
 
+# Build provenance for GET /api/version. .git is excluded from the context, so
+# the commit has to arrive as a build arg: `--build-arg GIT_SHA=$(git rev-parse
+# HEAD)`. Render passes its RENDER_GIT_COMMIT into the build as well, and the
+# app falls back to it at runtime, so leaving these unset is not an error.
+ARG GIT_SHA=""
+ARG BUILD_TIME=""
+ENV SIREN_GIT_SHA=${GIT_SHA}     SIREN_BUILD_TIME=${BUILD_TIME}
+
 # Fail the build, not the first request.
 #
 # The size tests catch a Git LFS pointer that was never fetched: that is a

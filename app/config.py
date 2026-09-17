@@ -35,8 +35,13 @@ class Settings(BaseSettings):
 
     # ── Application ────────────────────────────────────────────────────
     APP_NAME: str = "Siren Eyes"
-    APP_VERSION: str = "2.0.0"
+    APP_VERSION: str = "2.1.0"
     ENVIRONMENT: str = "development"
+    # Build provenance for GET /api/version. Both are optional: the Dockerfile
+    # stamps them as build args, Render exposes the commit as RENDER_GIT_COMMIT,
+    # and a local checkout falls back to asking git directly.
+    GIT_SHA: str | None = None
+    BUILD_TIME: str | None = None
 
     # ── Model artefacts ────────────────────────────────────────────────
     YOLO_WEIGHTS: Path = MODELS_DIR / "best.pt"
@@ -116,6 +121,11 @@ class Settings(BaseSettings):
         default_factory=lambda: ["http://localhost:5173", "http://localhost:4173"]
     )
     MAX_UPLOAD_MB: int = 200
+    # Container formats the ffmpeg + OpenCV pair is known to decode. Used for
+    # the 415 check on upload and echoed to the UI for client-side validation.
+    UPLOAD_EXTENSIONS: list[str] = Field(
+        default_factory=lambda: [".mp4", ".mov", ".m4v", ".webm", ".mkv", ".avi", ".mpg", ".mpeg"]
+    )
 
     @property
     def angle_bins(self) -> list[float]:
