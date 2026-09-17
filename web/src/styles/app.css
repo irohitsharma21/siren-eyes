@@ -842,6 +842,10 @@ html.theme-transition *::after {
   scrollbar-gutter: stable;
 }
 .instruments .panel + .panel { margin-top: 0; }
+/* The column is a flex container with a max-height and the panels clip
+   their own overflow, so without this every panel is squashed to make the
+   column fit instead of the column scrolling. */
+.instruments > * { flex: 0 0 auto; }
 .panel-meta { font-size: 0.6875rem; color: var(--text-mute); }
 
 /* ── Explainer ────────────────────────────────────────────────────── */
